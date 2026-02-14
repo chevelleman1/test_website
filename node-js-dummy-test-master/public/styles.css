@@ -31,3 +31,28 @@ ul {
     line-height: 10px;
     cursor: pointer;
 }
+
+.footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 20px 0;
+    background: rgba(0, 0, 0, 0.8);
+    text-align: center;
+}
+
+.social-icons {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+}
+
+.social-icons a {
+    color: #00ffbf;
+    transition: color 0.3s ease;
+}
+
+.social-icons a:hover {
+    color: #00cc99;
+}
