@@ -38,7 +38,8 @@ ul {
     left: 0;
     width: 100%;
     padding: 20px 0;
-    background: rgba(0, 0, 0, 0.8);
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    border-top: 2px solid #00ffbf;
     text-align: center;
 }
 
