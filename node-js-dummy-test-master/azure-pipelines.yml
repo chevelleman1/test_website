@@ -1,0 +1,25 @@
+trigger:
+  - main
+  - master
+
+pool:
+  name: 'linuxBuildBox'
+
+steps:
+- checkout: self
+  displayName: 'Checkout code'
+
+- task: NodeTool@0
+  inputs:
+    versionSpec: '16.x'
+  displayName: 'Install Node.js'
+
+- script: |
+    npm install
+  displayName: 'Install dependencies'
+  workingDirectory: 'node-js-dummy-test-master'
+
+- script: |
+    npm test
+  workingDirectory: 'node-js-dummy-test-master'
+  displayName: 'Run tests'
