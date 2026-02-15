@@ -5,41 +5,50 @@ trigger:
 pool:
   name: 'linuxBuildBox'
 
+variables:
+  workingDir: 'node-js-dummy-test-master'
+
 steps:
 - checkout: self
-  displayName: 'Checkout code'
+  displayName: '1. Checkout code'
 
 - task: NodeTool@0
   inputs:
     versionSpec: '16.x'
-  displayName: 'Install Node.js'
+  displayName: '2. Install Node.js'
+
+- script: npm install
+  workingDirectory: $(workingDir)
+  displayName: '3. Build (Install dependencies)'
 
 - script: |
-    npm install
-  displayName: 'Install dependencies'
-  workingDirectory: 'node-js-dummy-test-master'
+    echo "Starting local website..."
+    # Redirect all output to /dev/null to prevent the STDIO hang
+    nohup npm start > /dev/null 2>&1 & 
+    
+    # Save the PID to a file so the next step can find it
+    echo $! > server.pid
+    echo "Server started with PID $(cat server.pid)"
+    
+    # Wait for boot
+    sleep 30
+  workingDirectory: $(workingDir)
+  displayName: '4. Start Server'
 
 - script: |
-    echo "starting local website with npm start and getting the server PID"
-    # 1. Start server in background using '&'
-    npm start &
-    SERVER_PID=$!
-    echo "Server started with PID $SERVER_PID"
-
-    # 2. Wait for server to boot
-    #wait 60 seconds for the site to be running
-    echo "waiting 60 seconds..."
-    sleep 60
-
-    # 3. Run tests
-    echo "issue a wget to make sure the site is running, this would be a good place for automted UI tests"
+    echo "Testing connection to http://localhost:3000/..."
     RESPONSE=$(curl -s http://localhost:3000/)
-      
-      # Echo the response
-      echo "Web app response: $RESPONSE"
+    echo "Web app response: $RESPONSE"
+  workingDirectory: $(workingDir)
+  displayName: '5. Run Tests'
 
-    # 4. Clean up
-    echo "stopping the website now."
-    kill $SERVER_PID
-  workingDirectory: 'node-js-dummy-test-master'
-  displayName: 'Start server and run tests locally on agent'
+- script: |
+    if [ -f server.pid ]; then
+      PID=$(cat server.pid)
+      echo "Stopping server with PID $PID..."
+      kill $PID || true
+      rm server.pid
+    fi
+  workingDirectory: $(workingDir)
+  displayName: '6. Stop Server'
+  condition: always() # Ensures the server is stopped even if tests fail
