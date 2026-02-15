@@ -20,6 +20,23 @@ steps:
   workingDirectory: 'node-js-dummy-test-master'
 
 - script: |
-    npm test
+    echo "starting local website with npm start and getting the server PID"
+    # 1. Start server in background using '&'
+    npm start &
+    SERVER_PID=$!
+    echo "Server started with PID $SERVER_PID"
+
+    # 2. Wait for server to boot
+    #wait 60 seconds for the site to be running
+    echo "waiting 60 seconds..."
+    sleep 60
+
+    # 3. Run tests
+    # Ensure 'your-test-command' is defined in your package.json
+    #npm run your-test-command
+
+    # 4. Clean up
+    echo "stopping the website now."
+    kill $SERVER_PID
   workingDirectory: 'node-js-dummy-test-master'
-  displayName: 'Run tests'
+  displayName: 'Start server and run tests locally on agent'
