@@ -32,8 +32,11 @@ steps:
     sleep 60
 
     # 3. Run tests
-    # Ensure 'your-test-command' is defined in your package.json
-    #npm run your-test-command
+    echo "issue a wget to make sure the site is running, this would be a good place for automted UI tests"
+    RESPONSE=$(curl -s http://localhost:3000/)
+      
+      # Echo the response
+      echo "Web app response: $RESPONSE"
 
     # 4. Clean up
     echo "stopping the website now."
