@@ -4,66 +4,67 @@ trigger:
 
 resources:
   repositories:
-    - repository: automatedtesting # Alias for the second repo
+    - repository: automatedtesting
       type: github
-      endpoint: 'chevelleman1' # Name of your GitHub service connection
-      name: 'chevelleman1/automatedtesting' # The GitHub repo path
-
+      endpoint: 'chevelleman1'
+      name: 'chevelleman1/automatedtesting'
 
 pool:
   name: 'linuxBuildBox'
 
 variables:
-  workingDir: 'node-js-dummy-test-master'
+  # Added 'app/' prefix because of the 'path: app' checkout step below
+  workingDir: 'app/node-js-dummy-test-master'
 
 steps:
-- checkout: self # Pulls your app code into /s/node-js-dummy-test-master
+- checkout: self 
   path: app
 
-- checkout: automatedtesting # Pulls your tests into /s/tests
+- checkout: automatedtesting 
   path: tests
 
 - task: NodeTool@0
   inputs:
     versionSpec: '16.x'
-  displayName: '2. Install Node.js'
+  displayName: 'Install Node.js'
 
 - script: npm install
   workingDirectory: $(workingDir)
-  displayName: '3. Build (Install dependencies)'
+  displayName: 'Build (Install dependencies)'
 
 - script: |
     echo "Starting local website..."
-    # Redirect all output to /dev/null to prevent the STDIO hang
+    # Start server and detach from STDIO to prevent pipeline hang
     nohup npm start > /dev/null 2>&1 & 
     
-    # Save the PID to a file so the next step can find it
-    echo $! > server.pid
-    echo "Server started with PID $(cat server.pid)"
+    # Save PID to the workspace root so it's easy for other steps to find
+    echo $! > $(Pipeline.Workspace)/server.pid
+    echo "Server started with PID $(cat $(Pipeline.Workspace)/server.pid)"
     
     # Wait for boot
     sleep 30
   workingDirectory: $(workingDir)
-  displayName: '4. Start Server'
+  displayName: 'Start Server'
 
 - script: |
+    echo "Installing Playwright/Test dependencies..."
     npm install
+    # Uncomment if browsers aren't on your agent yet:
+    # npx playwright install --with-deps
+    
+    echo "Running UI Automated Tests..."
     npm test
-    # echo "Testing connection to http://localhost:3000/..."
-    # RESPONSE=$(curl -s http://localhost:3000/)
-    # echo "Web app response: $RESPONSE"
   workingDirectory: $(Pipeline.Workspace)/tests
-  displayName: '5. Run UI Automated Tests'
+  displayName: 'Run UI Automated Tests'
 
 - script: |
-    if [ -f server.pid ]; then
-      PID=$(cat server.pid)
+    if [ -f $(Pipeline.Workspace)/server.pid ]; then
+      PID=$(cat $(Pipeline.Workspace)/server.pid)
       echo "Stopping server with PID $PID..."
       kill $PID || true
-      rm server.pid
+      rm $(Pipeline.Workspace)/server.pid
     fi
-  workingDirectory: $(workingDir)
-  displayName: '6. Stop Server'
-  condition: always() # Ensures the server is stopped even if tests fail
-
-
+    # Extra safety: kill anything on port 3000
+    fuser -k 3000/tcp || true
+  displayName: 'Stop Server'
+  condition: always()
