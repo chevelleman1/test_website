@@ -9,19 +9,25 @@ resources:
       endpoint: 'chevelleman1'
       name: 'chevelleman1/automatedtesting'
 
+    - repository: test_website
+      type: github
+      endpoint: 'chevelleman1'
+      name: 'chevelleman1/test_website'
+
 pool:
   name: 'linuxBuildBox'
 
-variables:
+#variables:
   # Added 'app/' prefix because of the 'path: app' checkout step below
-  workingDir: 'node-js-dummy-test-master'
+  #workingDir: 'node-js-dummy-test-master'
 
 steps:
-- checkout: self 
-  path: app
 
 - checkout: automatedtesting 
   path: tests
+
+- checkout: test_website 
+  path: app
 
 - task: NodeTool@0
   inputs:
@@ -29,6 +35,7 @@ steps:
   displayName: 'Install Node.js'
 
 - script: npm install
+
   workingDirectory: 'app/node-js-dummy-test-master'
   displayName: 'Build (Install dependencies)'
 
@@ -43,7 +50,7 @@ steps:
     
     # Wait for boot
     sleep 30
-  workingDirectory: $(workingDir)
+  workingDirectory: 'app/node-js-dummy-test-master'
   displayName: 'Start Server'
 
 - script: |
@@ -54,7 +61,7 @@ steps:
     
     echo "Running UI Automated Tests..."
     npm test
-  workingDirectory: $(Pipeline.Workspace)/tests
+  workingDirectory: 'tests'
   displayName: 'Run UI Automated Tests'
 
 - script: |
@@ -66,5 +73,6 @@ steps:
     fi
     # Extra safety: kill anything on port 3000
     fuser -k 3000/tcp || true
+  workingDirectory: 'app/node-js-dummy-test-master'
   displayName: 'Stop Server'
   condition: always()
