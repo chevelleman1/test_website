@@ -29,7 +29,7 @@ steps:
   displayName: 'Install Node.js'
 
 - script: npm install
-  workingDirectory: 'node-js-dummy-test-master'
+  workingDirectory: 'app/node-js-dummy-test-master'
   displayName: 'Build (Install dependencies)'
 
 - script: |
