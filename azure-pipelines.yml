@@ -36,7 +36,7 @@ steps:
 
 - script: npm install
 
-  workingDirectory: s/app/node-js-dummy-test-master
+  workingDirectory: app/node-js-dummy-test-master
   displayName: 'Build (Install dependencies)'
 
 # - script: |
