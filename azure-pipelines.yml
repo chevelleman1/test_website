@@ -39,7 +39,7 @@ steps:
 
 - script: npm install
 
-  workingDirectory: app/node-js-dummy-test-master
+  workingDirectory: '$(Build.SourcesDirectory)/app/node-js-dummy-test-master'
   displayName: 'Build (Install dependencies)'
 
 # - script: |
@@ -88,7 +88,7 @@ steps:
     # Name of the Docker registry service connection created in Azure DevOps
     containerRegistry: 'bobdocker' 
     repository: 'chevelleman1/bobwebapp'
-    dockerfile: app/node-js-dummy-test-master
+    dockerfile: '$(Build.SourcesDirectory)/app/node-js-dummy-test-master'
     tags: |
       latest
 
