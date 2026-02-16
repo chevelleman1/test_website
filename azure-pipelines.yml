@@ -8,51 +8,47 @@ pool:
 variables:
   workingDir: 'node-js-dummy-test-master'
 
-stages:
-- stage: BuildAndTest
-  jobs:
-  # 1. BUILD JOB
-  - job: Build
-    displayName: 'Build Application'
-    steps:
-    - task: NodeTool@0
-      inputs:
-        versionSpec: '16.x'
-    - script: npm install
-      workingDirectory: $(workingDir)
-      displayName: 'Install Dependencies'
+steps:
+- checkout: self
+  displayName: '1. Checkout code'
 
-  # 2. TEST JOB (The "Try" Block)
-  - deployment: IntegrationTests
-    dependsOn: Build
-    displayName: 'Start and Test'
-    environment: 'LocalTestEnv' # Logical name for your environment
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - script: |
-              echo "Starting server..."
-              nohup npm start > /dev/null 2>&1 & 
-              echo $! > $(Pipeline.Workspace)/server.pid
-              sleep 30
-            workingDirectory: $(workingDir)
-            displayName: 'Start Server'
+- task: NodeTool@0
+  inputs:
+    versionSpec: '16.x'
+  displayName: '2. Install Node.js'
 
-          - script: |
-              echo "Running tests..."
-              curl -s http://localhost:3000/
-            workingDirectory: $(workingDir)
-            displayName: 'Execute Tests'
+- script: npm install
+  workingDirectory: $(workingDir)
+  displayName: '3. Build (Install dependencies)'
 
-  # 3. CLEANUP JOB (The "Finally" Block)
-  - job: StopServer
-    dependsOn: IntegrationTests
-    displayName: 'Stop Server'
-    condition: always() # CRITICAL: This makes it act like a "finally" block
-    steps:
-    - script: |
-        echo "Ensuring port 3000 is free..."
-        fuser -k 3000/tcp || true
-        echo "Cleanup complete."
-      displayName: 'Kill Process by Port'
+- script: |
+    echo "Starting local website..."
+    # Redirect all output to /dev/null to prevent the STDIO hang
+    nohup npm start > /dev/null 2>&1 & 
+    
+    # Save the PID to a file so the next step can find it
+    echo $! > server.pid
+    echo "Server started with PID $(cat server.pid)"
+    
+    # Wait for boot
+    sleep 30
+  workingDirectory: $(workingDir)
+  displayName: '4. Start Server'
+
+- script: |
+    echo "Testing connection to http://localhost:3000/..."
+    RESPONSE=$(curl -s http://localhost:3000/)
+    echo "Web app response: $RESPONSE"
+  workingDirectory: $(workingDir)
+  displayName: '5. Run Tests'
+
+- script: |
+    if [ -f server.pid ]; then
+      PID=$(cat server.pid)
+      echo "Stopping server with PID $PID..."
+      kill $PID || true
+      rm server.pid
+    fi
+  workingDirectory: $(workingDir)
+  displayName: '6. Stop Server'
+  condition: always() # Ensures the server is stopped even if tests fail
