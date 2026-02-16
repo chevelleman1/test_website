@@ -31,7 +31,7 @@ steps:
 
 - task: NodeTool@0
   inputs:
-    versionSpec: '16.x'
+    versionSpec: '18.x'
   displayName: 'Install Node.js'
 
 - script: npm install
@@ -57,7 +57,7 @@ steps:
     echo "Installing Playwright/Test dependencies..."
     npm install
     # Uncomment if browsers aren't on your agent yet:
-    # npx playwright install --with-deps
+    #npx playwright install --with-deps
     
     echo "Running UI Automated Tests..."
     npm test
