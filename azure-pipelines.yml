@@ -14,7 +14,7 @@ pool:
 
 variables:
   # Added 'app/' prefix because of the 'path: app' checkout step below
-  workingDir: 'app/node-js-dummy-test-master'
+  workingDir: 'node-js-dummy-test-master'
 
 steps:
 - checkout: self 
@@ -29,7 +29,7 @@ steps:
   displayName: 'Install Node.js'
 
 - script: npm install
-  workingDirectory: $(workingDir)
+  workingDirectory: 'node-js-dummy-test-master'
   displayName: 'Build (Install dependencies)'
 
 - script: |
