@@ -7,10 +7,10 @@ trigger:
   
 resources:
   repositories:
-    - repository: automatedtesting
-      type: github
-      endpoint: 'chevelleman1'
-      name: 'chevelleman1/automatedtesting'
+    # - repository: automatedtesting
+    #   type: github
+    #   endpoint: 'chevelleman1'
+    #   name: 'chevelleman1/automatedtesting'
 
     - repository: test_website
       type: github
@@ -26,8 +26,8 @@ pool:
 
 steps:
 
-- checkout: automatedtesting 
-  path: s/tests
+# - checkout: automatedtesting 
+#   path: s/tests
 
 - checkout: test_website 
   path: s/app
