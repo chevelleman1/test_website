@@ -2,6 +2,14 @@ trigger:
   - main
   - master
 
+resources:
+  repositories:
+    - repository: automatedtesting # Alias for the second repo
+      type: github
+      endpoint: 'chevelleman1' # Name of your GitHub service connection
+      name: 'chevelleman1/automatedtesting' # The GitHub repo path
+
+
 pool:
   name: 'linuxBuildBox'
 
@@ -9,8 +17,11 @@ variables:
   workingDir: 'node-js-dummy-test-master'
 
 steps:
-- checkout: self
-  displayName: '1. Checkout code'
+- checkout: self # Pulls your app code into /s/node-js-dummy-test-master
+  path: app
+
+- checkout: automatedtesting # Pulls your tests into /s/tests
+  path: tests
 
 - task: NodeTool@0
   inputs:
@@ -36,11 +47,13 @@ steps:
   displayName: '4. Start Server'
 
 - script: |
-    echo "Testing connection to http://localhost:3000/..."
-    RESPONSE=$(curl -s http://localhost:3000/)
-    echo "Web app response: $RESPONSE"
-  workingDirectory: $(workingDir)
-  displayName: '5. Run Tests'
+    npm install
+    npm test
+    # echo "Testing connection to http://localhost:3000/..."
+    # RESPONSE=$(curl -s http://localhost:3000/)
+    # echo "Web app response: $RESPONSE"
+  workingDirectory: $(Pipeline.Workspace)/tests
+  displayName: '5. Run UI Automated Tests'
 
 - script: |
     if [ -f server.pid ]; then
@@ -52,3 +65,5 @@ steps:
   workingDirectory: $(workingDir)
   displayName: '6. Stop Server'
   condition: always() # Ensures the server is stopped even if tests fail
+
+
