@@ -30,15 +30,16 @@ steps:
 #   path: s/tests
 
 - checkout: test_website 
-  path: s/app
+  path: '$(Build.SourcesDirectory)/app'
 
 - task: NodeTool@0
   inputs:
     versionSpec: '18.x'
   displayName: 'Install Node.js'
+      
 
 - script: npm install
-
+    echo "XXXXXXXXXXXXXX- $(Build.SourcesDirectory)"
   workingDirectory: '$(Build.SourcesDirectory)/app/node-js-dummy-test-master'
   displayName: 'Build (Install dependencies)'
 
