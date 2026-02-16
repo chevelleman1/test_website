@@ -2,8 +2,8 @@ trigger:
   - main
   - master
 
-variables:
-  DOCKER_BUILDKIT: 1
+# variables:
+#   DOCKER_BUILDKIT: 1
   
 resources:
   repositories:
