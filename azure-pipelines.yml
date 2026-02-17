@@ -39,7 +39,7 @@ steps:
 
 - script: npm install |
     echo "XXXXXXXXXXXXXX- $(Build.SourcesDirectory)"
-  workingDirectory: 'node-js-dummy-test-master'
+  workingDirectory: 'app/node-js-dummy-test-master'
   displayName: 'Build (Install dependencies)'
 
 - script: |
@@ -53,7 +53,7 @@ steps:
     
     # Wait for boot
     sleep 30
-  workingDirectory: node-js-dummy-test-master
+  workingDirectory: 'app/node-js-dummy-test-master'
   displayName: 'Start Server'
 
 - script: |
@@ -76,7 +76,7 @@ steps:
     fi
     # Extra safety: kill anything on port 3000
     fuser -k 3000/tcp || true
-  workingDirectory: node-js-dummy-test-master
+  workingDirectory: 'app/node-js-dummy-test-master'
   displayName: 'Stop Server'
   condition: always()
 
