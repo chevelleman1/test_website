@@ -104,7 +104,7 @@ steps:
     # Name of the Docker registry service connection created in Azure DevOps
     containerRegistry: 'bobdocker' 
     repository: 'chevelleman1/bobwebapp'
-    dockerfile: 'node-js-dummy-test-master/Dockerfile'
+    dockerfile: 'app/node-js-dummy-test-master/Dockerfile'
     tags: |
       latest
 
