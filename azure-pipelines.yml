@@ -40,7 +40,7 @@ steps:
 
 - script: npm install
     echo "XXXXXXXXXXXXXX- $(Build.SourcesDirectory)"
-  workingDirectory: 'app/node-js-dummy-test-master'
+  workingDirectory: 'node-js-dummy-test-master'
   displayName: 'Build (Install dependencies)'
 
 # - script: |
