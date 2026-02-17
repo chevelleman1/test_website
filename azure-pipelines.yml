@@ -38,8 +38,10 @@ steps:
       
 
 - script:  |
-    npm install
+    # Disable telemetry and audit to prevent the "Exit handler" hang
+    npm install --no-audit --no-fund --no-update-notifier
     echo "XXXXXXXXXXXXXX- $(Build.SourcesDirectory)"
+
   workingDirectory: 'app/node-js-dummy-test-master'
   displayName: 'Build (Install dependencies)'
 
