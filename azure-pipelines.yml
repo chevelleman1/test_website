@@ -37,7 +37,8 @@ steps:
   displayName: 'Install Node.js'
       
 
-- script: npm install |
+- script:  |
+    npm install
     echo "XXXXXXXXXXXXXX- $(Build.SourcesDirectory)"
   workingDirectory: 'app/node-js-dummy-test-master'
   displayName: 'Build (Install dependencies)'
