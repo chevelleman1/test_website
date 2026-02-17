@@ -30,7 +30,7 @@ steps:
 #   path: s/tests
 
 - checkout: test_website 
-  path: '$(Build.SourcesDirectory)/app'
+  path: 's/app'
 
 - task: NodeTool@0
   inputs:
@@ -40,7 +40,7 @@ steps:
 
 - script: npm install
     echo "XXXXXXXXXXXXXX- $(Build.SourcesDirectory)"
-  workingDirectory: '$(Build.SourcesDirectory)/app/node-js-dummy-test-master'
+  workingDirectory: 'app/node-js-dummy-test-master'
   displayName: 'Build (Install dependencies)'
 
 # - script: |
@@ -89,7 +89,7 @@ steps:
     # Name of the Docker registry service connection created in Azure DevOps
     containerRegistry: 'bobdocker' 
     repository: 'chevelleman1/bobwebapp'
-    dockerfile: '$(Build.SourcesDirectory)/app/node-js-dummy-test-master'
+    dockerfile: 'app/node-js-dummy-test-master/Dockerfile'
     tags: |
       latest
 
