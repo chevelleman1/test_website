@@ -2,15 +2,18 @@ trigger:
   - main
   - master
 
-# variables:
-#   DOCKER_BUILDKIT: 1
+variables:
+   DOCKER_BUILDKIT: 1
+   siteRepDir: '$(Build.SourcesDirectory)/app'
+   testRepDir: '$(Build.SourcesDirectory)/tests'
+  
   
 resources:
   repositories:
-    # - repository: automatedtesting
-    #   type: github
-    #   endpoint: 'chevelleman1'
-    #   name: 'chevelleman1/automatedtesting'
+    - repository: automatedtesting
+      type: github
+      endpoint: 'chevelleman1'
+      name: 'chevelleman1/automatedtesting'
 
     - repository: test_website
       type: github
@@ -20,14 +23,10 @@ resources:
 pool:
   name: 'linuxBuildBox'
 
-#variables:
-  # Added 'app/' prefix because of the 'path: app' checkout step below
-  #workingDir: 'node-js-dummy-test-master'
-
 steps:
 
-# - checkout: automatedtesting 
-#   path: s/tests
+- checkout: automatedtesting 
+  path: s/tests
 
 - checkout: test_website 
   path: 's/app'
