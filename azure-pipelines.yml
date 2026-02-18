@@ -33,7 +33,7 @@ stages:
       inputs:
         versionSpec: '18.x'
     - script: npm install --no-audit --no-fund
-      workingDirectory: 'app/node-js-dummy-test-master'
+      workingDirectory: 'node-js-dummy-test-master'
       displayName: 'Install Dependencies'
 
 # STAGE 2: Start the Website
@@ -86,7 +86,7 @@ stages:
         command: 'buildAndPush'
         containerRegistry: 'bobdocker' 
         repository: 'chevelleman1/bobwebapp'
-        dockerfile: 'app/node-js-dummy-test-master/Dockerfile'
+        dockerfile: 'node-js-dummy-test-master/Dockerfile'
         tags: |
           latest
     - script: fuser -k 3000/tcp || true
