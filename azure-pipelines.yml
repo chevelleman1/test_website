@@ -2,113 +2,97 @@ trigger:
   - main
   - master
 
-variables:
-   siteRepDir: '$(Build.SourcesDirectory)/app'
-   testRepDir: '$(Build.SourcesDirectory)/tests'
-  
-  
+# GLOBAL RESOURCES - Must be at the top level
 resources:
   repositories:
     - repository: automatedtesting
       type: github
       endpoint: 'chevelleman1'
       name: 'chevelleman1/automatedtesting'
-
     - repository: test_website
       type: github
       endpoint: 'chevelleman1'
       name: 'chevelleman1/test_website'
 
+variables:
+  DOCKER_BUILDKIT: 0
+  DOCKER_CLI_BUILDX: 0
+  workingDir: 'app/node-js-dummy-test-master'
+
+
+
 pool:
   name: 'linuxBuildBox'
 
-steps:
-
-- checkout: automatedtesting 
-  path: s/tests
-
-- checkout: test_website 
-  path: 's/app'
-
-- task: NodeTool@0
-  inputs:
-    versionSpec: '18.x'
-  displayName: 'Install Node.js'
-      
-
-- script:  |
-    # Disable telemetry and audit to prevent the "Exit handler" hang
-    npm install --no-audit --no-fund --no-update-notifier
-    echo "XXXXXXXXXXXXXX- $(Build.SourcesDirectory)"
-
-  workingDirectory: 'app/node-js-dummy-test-master'
-  displayName: 'Build (Install dependencies)'
-
-- script: |
-    echo "Starting local website..."
-    # Start server and detach from STDIO to prevent pipeline hang
-    nohup npm start > /dev/null 2>&1 & 
+stages:
+# STAGE 1: Start the Application
+- stage: StartApp
+  displayName: '1. Prepare & Start App'
+  jobs:
+  - job: Launch
+    steps:
+    - checkout: test_website 
+      path: 's/app'
     
-    # Save PID to the workspace root so it's easy for other steps to find
-    echo $! > $(Pipeline.Workspace)/server.pid
-    echo "Server started with PID $(cat $(Pipeline.Workspace)/server.pid)"
+    - task: NodeTool@0
+      inputs: { versionSpec: '18.x' }
+
+    - script: |
+        npm install --no-audit --no-fund
+        nohup npm start > /dev/null 2>&1 & 
+        echo $! > $(Pipeline.Workspace)/server.pid
+        # Wait for port 3000 to be active
+        for i in {1..30}; do if curl -s localhost:3000; then exit 0; fi; sleep 2; done
+        exit 1
+      workingDirectory: $(workingDir)
+      displayName: 'Start Web Server'
+
+# STAGE 2: Run Tests against the running App
+- stage: AutomatedTesting
+  displayName: '2. Run UI Tests'
+  dependsOn: StartApp
+  jobs:
+  - job: Playwright
+    steps:
+    - checkout: automatedtesting 
+      path: s/tests
     
-    # Wait for the site to be up
-    echo "Waiting for server on port 3000..."
-    # Attempt to connect to localhost:3000 once per second, up to 60 times
-    for i in {1..60}; do
-      if curl -s localhost:3000 > /dev/null; then
-        echo "Server is UP and responding!"
-        exit 0
-      fi
-      echo "Server not ready yet... waiting (attempt $i)"
-      sleep 1
-    done
+    - task: NodeTool@0
+      inputs: { versionSpec: '18.x' }
 
-    echo "Error: Server failed to start within 60 seconds."
-    cat server.log # Print logs so you can see why it failed
-    exit 1
-  workingDirectory: 'app/node-js-dummy-test-master'
-  displayName: 'Start Server'
+    - script: |
+        npm install
+        npm test
+      workingDirectory: tests
+      displayName: 'Run Playwright against Localhost'
 
-- script: |
-    echo "Installing Playwright/Test dependencies..."
-    npm install
-    # Uncomment if browsers aren't on your agent yet:
-    #npx playwright install --with-deps
-    
-    echo "Running UI Automated Tests..."
-    npm test
-  workingDirectory: tests
-  displayName: 'Run UI Automated Tests'
+# STAGE 3: Cleanup and Push Image
+- stage: Publish
+  displayName: '3. Build & Push Image'
+  dependsOn: AutomatedTesting
+  condition: always() # Runs even if tests fail so we can cleanup, but we filter inside
+  jobs:
+  - job: DockerPush
+    # Only push if tests actually passed
+    condition: succeeded('AutomatedTesting')
+    steps:
+    - checkout: test_website 
+      path: 's/app'
 
-- script: |
-    if [ -f $(Pipeline.Workspace)/server.pid ]; then
-      PID=$(cat $(Pipeline.Workspace)/server.pid)
-      echo "Stopping server with PID $PID..."
-      kill $PID || true
-      rm $(Pipeline.Workspace)/server.pid
-    fi
-    # Extra safety: kill anything on port 3000
-    fuser -k 3000/tcp || true
-  workingDirectory: 'app/node-js-dummy-test-master'
-  displayName: 'Stop Server'
-  condition: always()
+    - task: Docker@2
+      displayName: 'Push to Docker Hub'
+      inputs:
+        command: 'buildAndPush'
+        containerRegistry: 'bobdocker' 
+        repository: 'chevelleman1/bobwebapp'
+        dockerfile: '$(workingDir)/Dockerfile'
+        tags: |
+          latest
 
-
-- task: Docker@2
-  displayName: 'Build and push an image to container registry'
-  inputs:
-    command: 'buildAndPush'
-    # Name of the Docker registry service connection created in Azure DevOps
-    containerRegistry: 'bobdocker' 
-    repository: 'chevelleman1/bobwebapp'
-    dockerfile: 'app/node-js-dummy-test-master/Dockerfile'
-    tags: |
-      latest
-  env:
-    DOCKER_BUILDKIT: 0  # Force legacy builder
-    DOCKER_CLI_BUILDX: 0 
-
-    
-
+  - job: Cleanup
+    displayName: 'Kill Process'
+    dependsOn: DockerPush
+    condition: always()
+    steps:
+    - script: fuser -k 3000/tcp || true
+      displayName: 'Shutdown Port 3000'
