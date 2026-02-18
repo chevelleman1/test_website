@@ -109,6 +109,7 @@ steps:
       latest
   env:
     DOCKER_BUILDKIT: 0  # Force legacy builder
+    DOCKER_CLI_BUILDX: 0 
 
     
 
