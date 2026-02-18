@@ -2,7 +2,6 @@ trigger:
   - main
   - master
 
-# GLOBAL RESOURCES - Must be at the top level
 resources:
   repositories:
     - repository: automatedtesting
@@ -17,82 +16,79 @@ resources:
 variables:
   DOCKER_BUILDKIT: 0
   DOCKER_CLI_BUILDX: 0
-  workingDir: 'app/node-js-dummy-test-master'
-
-
 
 pool:
   name: 'linuxBuildBox'
 
 stages:
-# STAGE 1: Start the Application
-- stage: StartApp
-  displayName: '1. Prepare & Start App'
+# STAGE 1: Checkout and Build
+- stage: BuildCode
+  displayName: '1. Checkout & Build'
   jobs:
-  - job: Launch
+  - job: Compile
     steps:
     - checkout: test_website 
       path: 's/app'
-    
     - task: NodeTool@0
-      inputs: { versionSpec: '18.x' }
+      inputs:
+        versionSpec: '18.x'
+    - script: npm install --no-audit --no-fund
+      workingDirectory: 'app/node-js-dummy-test-master'
+      displayName: 'Install Dependencies'
 
+# STAGE 2: Start the Website
+- stage: StartSite
+  displayName: '2. Launch Site'
+  dependsOn: BuildCode
+  jobs:
+  - job: Launch
+    steps:
     - script: |
-        npm install --no-audit --no-fund
         nohup npm start > /dev/null 2>&1 & 
         echo $! > $(Pipeline.Workspace)/server.pid
-        # Wait for port 3000 to be active
         for i in {1..30}; do if curl -s localhost:3000; then exit 0; fi; sleep 2; done
         exit 1
       workingDirectory: 'app/node-js-dummy-test-master'
-      displayName: 'Start Web Server'
+      displayName: 'Start Background Server'
 
-# STAGE 2: Run Tests against the running App
+# STAGE 3: Run Tests
 - stage: AutomatedTesting
-  displayName: '2. Run UI Tests'
-  dependsOn: StartApp
+  displayName: '3. Run UI Tests'
+  dependsOn: StartSite
   jobs:
   - job: Playwright
     steps:
     - checkout: automatedtesting 
       path: s/tests
-    
     - task: NodeTool@0
-      inputs: { versionSpec: '18.x' }
-
+      inputs:
+        versionSpec: '18.x'
     - script: |
         npm install
         npm test
       workingDirectory: tests
-      displayName: 'Run Playwright against Localhost'
+      displayName: 'Run Tests'
 
-# STAGE 3: Cleanup and Push Image
-- stage: Publish
-  displayName: '3. Build & Push Image'
+# STAGE 4: Finalize (Docker & Cleanup)
+- stage: Finalize
+  displayName: '4. Docker & Cleanup'
   dependsOn: AutomatedTesting
-  condition: always() # Runs even if tests fail so we can cleanup, but we filter inside
+  condition: always()
   jobs:
-  - job: DockerPush
-    # Only push if tests actually passed
-    condition: succeeded('AutomatedTesting')
+  - job: PushAndClean
     steps:
     - checkout: test_website 
       path: 's/app'
-
     - task: Docker@2
-      displayName: 'Push to Docker Hub'
+      displayName: 'Build and Push'
+      condition: succeeded('AutomatedTesting')
       inputs:
         command: 'buildAndPush'
         containerRegistry: 'bobdocker' 
         repository: 'chevelleman1/bobwebapp'
-        dockerfile: '$(workingDir)/Dockerfile'
+        dockerfile: 'app/node-js-dummy-test-master/Dockerfile'
         tags: |
           latest
-
-  - job: Cleanup
-    displayName: 'Kill Process'
-    dependsOn: DockerPush
-    condition: always()
-    steps:
     - script: fuser -k 3000/tcp || true
-      displayName: 'Shutdown Port 3000'
+      displayName: 'Stop Server'
+      condition: always()
