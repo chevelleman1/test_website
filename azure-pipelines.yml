@@ -3,7 +3,6 @@ trigger:
   - master
 
 variables:
-   DOCKER_BUILDKIT: 1
    siteRepDir: '$(Build.SourcesDirectory)/app'
    testRepDir: '$(Build.SourcesDirectory)/tests'
   
