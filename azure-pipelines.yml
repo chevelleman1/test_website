@@ -105,6 +105,9 @@ steps:
     containerRegistry: 'bobdocker' 
     repository: 'chevelleman1/bobwebapp'
     dockerfile: 'app/node-js-dummy-test-master/Dockerfile'
+  env:
+    DOCKER_BUILDKIT: 0  # Force legacy builder
     tags: |
       latest
+    
 
