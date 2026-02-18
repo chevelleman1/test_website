@@ -45,6 +45,9 @@ stages:
     steps:
     - checkout: test_website 
       path: 's/app'
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '18.x'
     - script: |
         nohup npm start > /dev/null 2>&1 & 
         echo $! > $(Pipeline.Workspace)/server.pid
