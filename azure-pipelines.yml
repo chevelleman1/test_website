@@ -40,7 +40,7 @@ stages:
       #   echo $! > $(Pipeline.Workspace)/server.pid
       #   for i in {1..30}; do if curl -s localhost:3000; then exit 0; fi; sleep 2; done
       #   exit 1
-      # workingDirectory: 'node-js-dummy-test-master'
+      workingDirectory: 'node-js-dummy-test-master'
       displayName: 'Install Dependencies and start site'
 
 # # STAGE 2: Start the Website
