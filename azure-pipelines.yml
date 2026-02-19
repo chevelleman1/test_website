@@ -36,67 +36,67 @@ stages:
       workingDirectory: 'node-js-dummy-test-master'
       displayName: 'Install Dependencies'
 
-# # STAGE 2: Start the Website
-# - stage: StartSite
-#   displayName: '2. Launch Site'
-#   dependsOn: BuildCode
-#   jobs:
-#   - job: Launch
-#     steps:
-#     - checkout: test_website 
-#       path: 's/app'
-#     - task: NodeTool@0
-#       inputs:
-#         versionSpec: '18.x'
-#     - script: |
-#         npm start &
-#         sleep 20
-#         # nohup npm start > /dev/null 2>&1 & 
-#         # echo $! > $(Pipeline.Workspace)/server.pid
-#         # for i in {1..30}; do if curl -s localhost:3000; then exit 0; fi; sleep 2; done
-#         # exit 1
-#       workingDirectory: 'node-js-dummy-test-master'
-#       displayName: 'Start Background Server'
+# STAGE 2: Start the Website
+- stage: StartSite
+  displayName: '2. Launch Site'
+  dependsOn: BuildCode
+  jobs:
+  - job: Launch
+    steps:
+    - checkout: test_website 
+      path: 's/app'
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '18.x'
+    - script: |
+        npm start &
+        sleep 20
+        # nohup npm start > /dev/null 2>&1 & 
+        # echo $! > $(Pipeline.Workspace)/server.pid
+        # for i in {1..30}; do if curl -s localhost:3000; then exit 0; fi; sleep 2; done
+        # exit 1
+      workingDirectory: 'node-js-dummy-test-master'
+      displayName: 'Start Background Server'
 
-# # STAGE 3: Run Tests
-# - stage: AutomatedTesting
-#   displayName: '3. Run UI Tests'
-#   dependsOn: StartSite
-#   jobs:
-#   - job: Playwright
-#     steps:
-#     - checkout: automatedtesting 
-#       path: s/tests
-#     - task: NodeTool@0
-#       inputs:
-#         versionSpec: '18.x'
-#     - script: |
-#         npm install
-#         npm test
-#       workingDirectory: tests
-#       displayName: 'Run Tests'
+# STAGE 3: Run Tests
+- stage: AutomatedTesting
+  displayName: '3. Run UI Tests'
+  dependsOn: StartSite
+  jobs:
+  - job: Playwright
+    steps:
+    - checkout: automatedtesting 
+      path: s/tests
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '18.x'
+    - script: |
+        npm install
+        npm test
+      workingDirectory: tests
+      displayName: 'Run Tests'
 
-# # STAGE 4: Finalize (Docker & Cleanup)
-# - stage: Finalize
-#   displayName: '4. Docker & Cleanup'
-#   dependsOn: AutomatedTesting
-#   condition: always()
-#   jobs:
-#   - job: PushAndClean
-#     steps:
-#     - checkout: test_website 
-#       path: 's/app'
-#     - task: Docker@2
-#       displayName: 'Build and Push'
-#       condition: succeeded('AutomatedTesting')
-#       inputs:
-#         command: 'buildAndPush'
-#         containerRegistry: 'bobdocker' 
-#         repository: 'chevelleman1/bobwebapp'
-#         dockerfile: 'node-js-dummy-test-master/Dockerfile'
-#         tags: |
-#           latest
-#     - script: fuser -k 3000/tcp || true
-#       workingDirectory: 'node-js-dummy-test-master'
-#       displayName: 'Stop Server'
-#       condition: always()
+# STAGE 4: Finalize (Docker & Cleanup)
+- stage: Finalize
+  displayName: '4. Docker & Cleanup'
+  dependsOn: AutomatedTesting
+  condition: always()
+  jobs:
+  - job: PushAndClean
+    steps:
+    - checkout: test_website 
+      path: 's/app'
+    - task: Docker@2
+      displayName: 'Build and Push'
+      condition: succeeded('AutomatedTesting')
+      inputs:
+        command: 'buildAndPush'
+        containerRegistry: 'bobdocker' 
+        repository: 'chevelleman1/bobwebapp'
+        dockerfile: 'node-js-dummy-test-master/Dockerfile'
+        tags: |
+          latest
+    - script: fuser -k 3000/tcp || true
+      workingDirectory: 'node-js-dummy-test-master'
+      displayName: 'Stop Server'
+      condition: always()
