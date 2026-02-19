@@ -54,7 +54,7 @@ stages:
           sleep 2
         done
         exit 1
-      workingDirectory: 'node-js-dummy-test-master'
+      workingDirectory: 'app/node-js-dummy-test-master'
       displayName: 'Start Website'
 
     # 3. Run the Automation Tests
