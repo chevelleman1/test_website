@@ -33,13 +33,45 @@ stages:
       inputs:
         versionSpec: '18.x'
     - script: |
-        npm install
-        npm start &
-        sleep 20
-      #           nohup npm start > /dev/null 2>&1 & 
-      #   echo $! > $(Pipeline.Workspace)/server.pid
-      #   for i in {1..30}; do if curl -s localhost:3000; then exit 0; fi; sleep 2; done
-      #   exit 1
+        # 1. Clean up port 3000 just in case a previous run crashed
+            fuser -k 3000/tcp || true
+
+            # 2. Install dependencies (must be in the same folder as package.json)
+            npm install
+
+            # 3. Start the website in the background and save its PID
+            # We redirect logs to a file so the pipeline doesn't "hang" on the stream
+            nohup npm start > webserver.log 2>&1 &
+            echo $! > server.pid
+            echo "Website started with PID $(cat server.pid)"
+
+            # 4. Verify the site is up (Polling loop)
+            echo "Waiting for localhost:3000 to respond..."
+            for i in {1..20}; do
+              if curl -s http://localhost:3000 > /dev/null; then
+                echo "SUCCESS: Website is up!"
+                break
+              fi
+              echo "Attempt $i: Site not ready yet, sleeping 2s..."
+              sleep 2
+              if [ $i -eq 20 ]; then
+                echo "ERROR: Website failed to start within 40 seconds."
+                kill $(cat server.pid)
+                exit 1
+              fi
+            done
+
+            # 5. Stop the website so the pipeline can finish immediately
+            echo "Shutting down website..."
+            kill $(cat server.pid)
+
+
+        # npm install
+        # npm start &
+        # #nohup npm start > /dev/null 2>&1 & 
+        # # echo $! > $(Pipeline.Workspace)/server.pid
+        # for i in {1..30}; do if curl -s localhost:3000; then exit 0; fi; sleep 2; done
+        # exit 1
       workingDirectory: 'node-js-dummy-test-master'
       displayName: 'Install Dependencies and start site'
 
