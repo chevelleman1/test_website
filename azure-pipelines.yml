@@ -1,0 +1,101 @@
+trigger:
+  branches:
+    include:
+    - main
+    - master
+resources:
+  repositories:
+  - repository: automatedtesting
+    type: github
+    endpoint: 'chevelleman1'
+    name: 'chevelleman1/automatedtesting'
+  - repository: test_website
+    type: github
+    endpoint: 'chevelleman1'
+    name: 'chevelleman1/test_website'
+variables:
+- name: DOCKER_BUILDKIT
+  value: 0
+- name: DOCKER_CLI_BUILDX
+  value: 0
+pool:
+  name: 'linuxBuildBox'
+stages:
+- stage: BuildAndTest
+  displayName: '1. Checkout, Build, Start & Test'
+  jobs:
+  - job: CompileAndTest
+    steps:
+    - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
+      inputs:
+        repository: test_website
+        path: 's/app'
+    - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
+      inputs:
+        repository: automatedtesting
+        path: 's/tests'
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '18.x'
+    - task: Bash@3
+      displayName: 'NPM Install and NPM Start'
+      inputs:
+        targetType: inline
+        script: |
+          fuser -k 3000/tcp || true
+          npm install
+          nohup npm start > webserver.log 2>&1 &
+          echo $! > server.pid
+
+          echo "Waiting for localhost:3000..."
+          for i in {1..20}; do
+            if curl -s http://localhost:3000 > /dev/null; then
+              echo "SUCCESS: Website is up!"
+              exit 0
+            fi
+            sleep 2
+          done
+          exit 1
+        workingDirectory: 'app/node-js-dummy-test-master'
+    - task: Bash@3
+      displayName: 'Run UI Tests - install/test'
+      inputs:
+        targetType: inline
+        script: |
+          npm install
+          npm test
+        workingDirectory: 'tests'
+    - task: Bash@3
+      displayName: 'Stop Website'
+      condition: always()
+      inputs:
+        targetType: inline
+        script: |
+          echo "Kill anything running on port 3000/tcp"
+          fuser -k 3000/tcp || true
+- stage: Finalize
+  displayName: '4. Docker & Cleanup'
+  dependsOn:
+  - BuildAndTest
+  condition: always()
+  jobs:
+  - job: PushAndClean
+    steps:
+    - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
+      inputs:
+        repository: test_website
+        path: 's/app'
+    - task: Docker@2
+      displayName: 'Build and Push'
+      inputs:
+        command: 'buildAndPush'
+        containerRegistry: 'bobdocker'
+        repository: 'chevelleman1/bobwebapp'
+        dockerfile: 'node-js-dummy-test-master/Dockerfile'
+        tags: |
+          latest
+    - task: CmdLine@2
+      displayName: 'Stop Server'
+      condition: always()
+      inputs:
+        script: fuser -k 3000/tcp || true
