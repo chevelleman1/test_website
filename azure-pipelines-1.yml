@@ -1,0 +1,60 @@
+# Docker
+# Build a Docker image
+# https://docs.microsoft.com/azure/devops/pipelines/languages/docker
+
+trigger:
+- main
+
+resources:
+- repo: self
+
+variables:
+  tag: '$(Build.BuildId)'
+  group: bobvault
+
+pool:
+  name: 'linuxBuildBox'
+
+stages:
+  
+# STAGE 4: Finalize (Docker & Cleanup)
+- stage: Finalize
+  displayName: '4. Docker & Cleanup'
+  condition: always()
+  jobs:
+  - job: PushAndClean
+    steps:
+    - checkout: test_website 
+      path: 's/app'
+    - task: Docker@2
+      displayName: 'Build and Push'
+      inputs:
+        command: 'buildAndPush'
+        containerRegistry: 'bobdocker' 
+        repository: 'chevelleman1/bobwebapp'
+        dockerfile: 'node-js-dummy-test-master/Dockerfile'
+        tags: |
+          latest
+    - script: fuser -k 3000/tcp || true
+      displayName: 'Stop Server'
+      condition: always()
+
+- stage: Deploy
+  displayName: 'Deploy to Web Server'
+  dependsOn: Finalize
+  condition: succeeded()
+  jobs:
+  - job: DeployJob
+    steps:
+    - task: SSH@0
+      displayName: 'Run Docker commands on remote server'
+      inputs:
+        sshEndpoint: 'sshx'  # Your service connection name
+        runOptions: 'commands'
+        commands: |
+          docker pull docker.io/chevelleman1/bobwebapp:latest
+          docker stop bobsite || true
+          docker rm bobsite || true
+          docker run -d --name bobsite -p 8081:8081 docker.io/chevelleman1/bobwebapp:latest
+        readyTimeout: '20000'
+
