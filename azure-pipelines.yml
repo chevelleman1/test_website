@@ -110,7 +110,9 @@ stages:
         runOptions: 'commands'
         commands: |
           docker pull docker.io/chevelleman1/bobwebapp:latest
-          docker stop bobsite || true
-          docker rm bobsite || true
+          if [ "$(docker ps -aq -f name=bobsite)" ]; then
+            docker stop bobsite
+            docker rm bobsite
+          fi
           docker run -d --name bobsite -p 8081:8081 docker.io/chevelleman1/bobwebapp:latest
         readyTimeout: '20000'
