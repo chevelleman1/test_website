@@ -26,14 +26,11 @@ stages:
   jobs:
   - job: CompileAndTest
     steps:
-    - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
-      inputs:
-        repository: test_website
-        path: 's/app'
-    - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
-      inputs:
-        repository: automatedtesting
-        path: 's/tests'
+    - checkout: automatedtesting 
+      path: s/tests
+
+    - checkout: test_website 
+      path: 's/app'
     - task: NodeTool@0
       inputs:
         versionSpec: '18.x'
@@ -81,10 +78,8 @@ stages:
   jobs:
   - job: PushAndClean
     steps:
-    - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
-      inputs:
-        repository: test_website
-        path: 's/app'
+    - checkout: test_website 
+      path: 's/app'
     - task: Docker@2
       displayName: 'Build and Push'
       inputs:
