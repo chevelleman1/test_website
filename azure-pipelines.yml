@@ -76,7 +76,7 @@ stages:
 - stage: Finalize
   displayName: '4. Docker & Cleanup'
   dependsOn: BuildAndTest
-  condition: always()
+  condition: succeeded()
   jobs:
   - job: PushAndClean
     steps:
@@ -88,7 +88,7 @@ stages:
         command: 'buildAndPush'
         containerRegistry: 'bobdocker' 
         repository: 'chevelleman1/bobwebapp'
-        dockerfile: 'node-js-dummy-test-master/Dockerfile'
+        dockerfile: 'Dockerfile'
         tags: |
           latest
     - script: fuser -k 8081/tcp || true
