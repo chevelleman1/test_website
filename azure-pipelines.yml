@@ -1,79 +1,81 @@
 trigger:
-  branches:
-    include:
-    - main
-    - master
+  - main
+  - master
+
 resources:
   repositories:
-  - repository: automatedtesting
-    type: github
-    endpoint: 'chevelleman1'
-    name: 'chevelleman1/automatedtesting'
-  - repository: test_website
-    type: github
-    endpoint: 'chevelleman1'
-    name: 'chevelleman1/test_website'
+    - repository: automatedtesting
+      type: github
+      endpoint: 'chevelleman1'
+      name: 'chevelleman1/automatedtesting'
+    - repository: test_website
+      type: github
+      endpoint: 'chevelleman1'
+      name: 'chevelleman1/test_website'
+
 variables:
-- name: DOCKER_BUILDKIT
-  value: 0
-- name: DOCKER_CLI_BUILDX
-  value: 0
+  DOCKER_BUILDKIT: 0
+  DOCKER_CLI_BUILDX: 0
+
 pool:
   name: 'linuxBuildBox'
+
 stages:
 - stage: BuildAndTest
   displayName: '1. Checkout, Build, Start & Test'
   jobs:
   - job: CompileAndTest
     steps:
-    - checkout: automatedtesting 
-      path: s/tests
-
+    # 1. BOTH checkouts must happen at the very beginning of the job
     - checkout: test_website 
       path: 's/app'
+    - checkout: automatedtesting 
+      path: 's/tests'
+
     - task: NodeTool@0
       inputs:
         versionSpec: '18.x'
-    - task: Bash@3
-      displayName: 'NPM Install and NPM Start'
-      inputs:
-        targetType: inline
-        script: |
-          fuser -k 80/tcp || true
-          npm install
-          nohup npm start > webserver.log 2>&1 &
-          echo $! > server.pid
+    - script: env | sort
+      displayName: 'List all environment variables'
 
-          echo "Waiting for localhost:80..."
-          for i in {1..20}; do
-            if curl -s http://localhost:80 > /dev/null; then
-              echo "SUCCESS: Website is up!"
-              exit 0
-            fi
-            sleep 2
-          done
-          exit 1
-        workingDirectory: 'app'
-    - task: Bash@3
+    # 2. Build and Start the Website
+    - bash: |
+        fuser -k 80/tcp || true
+        npm install
+        nohup npm start > webserver.log 2>&1 &
+        echo $! > server.pid
+        
+        echo "Waiting for localhost:80..."
+        for i in {1..20}; do
+          if curl -s http://localhost:80 > /dev/null; then
+            echo "SUCCESS: Website is up!"
+            exit 0
+          fi
+          sleep 2
+        done
+        exit 1
+      workingDirectory: 'app'
+      displayName: 'NPM Install and NPM Start'
+
+    # 3. Run the Automation Tests
+    - bash: |
+        npm install
+        npm test
+      workingDirectory: 'tests'
       displayName: 'Run UI Tests - install/test'
-      inputs:
-        targetType: inline
-        script: |
-          npm install
-          npm test
-        workingDirectory: 'tests'
-    - task: Bash@3
+
+    # 4. Mandatory Cleanup (Stops the 25-minute hang)
+    - bash: |
+        echo "Kill anything running on port 80/tcp"
+        fuser -k 80/tcp || true
       displayName: 'Stop Website'
-      condition: always()
-      inputs:
-        targetType: inline
-        script: |
-          echo "Kill anything running on port 80/tcp"
-          fuser -k 80/tcp || true
+      condition: always() 
+
+
+# STAGE 4: Finalize (Docker & Cleanup)
 - stage: Finalize
   displayName: '4. Docker & Cleanup'
-  dependsOn:
-  - BuildAndTest
+  dependsOn: BuildAndTest
   condition: always()
   jobs:
   - job: PushAndClean
@@ -84,13 +86,11 @@ stages:
       displayName: 'Build and Push'
       inputs:
         command: 'buildAndPush'
-        containerRegistry: 'bobdocker'
+        containerRegistry: 'bobdocker' 
         repository: 'chevelleman1/bobwebapp'
-        dockerfile: 'Dockerfile'
+        dockerfile: 'node-js-dummy-test-master/Dockerfile'
         tags: |
           latest
-    - task: CmdLine@2
+    - script: fuser -k 80/tcp || true
       displayName: 'Stop Server'
       condition: always()
-      inputs:
-        script: fuser -k 80/tcp || true
