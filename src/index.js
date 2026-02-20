@@ -2,7 +2,7 @@
 var express = require("express");
 var bodyParser = require("body-parser");
 var app = express();
-const port = process.env.PORT || 8081;
+const port = process.env.PORT || 80;
 
 
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -50,6 +50,6 @@ app.get("/", function (req, res) {
 
 
 //set app to listen on port 3000
-app.listen(8081, function () {
+app.listen(80, function () {
     console.log("server is running on port http://localhost:" + port);
 });
