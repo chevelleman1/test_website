@@ -53,7 +53,7 @@ stages:
             sleep 2
           done
           exit 1
-        workingDirectory: 'app/node-js-dummy-test-master'
+        workingDirectory: 'app'
     - task: Bash@3
       displayName: 'Run UI Tests - install/test'
       inputs:
@@ -86,7 +86,7 @@ stages:
         command: 'buildAndPush'
         containerRegistry: 'bobdocker'
         repository: 'chevelleman1/bobwebapp'
-        dockerfile: 'node-js-dummy-test-master/Dockerfile'
+        dockerfile: 'Dockerfile'
         tags: |
           latest
     - task: CmdLine@2
