@@ -39,14 +39,14 @@ stages:
       inputs:
         targetType: inline
         script: |
-          fuser -k 3000/tcp || true
+          fuser -k 80/tcp || true
           npm install
           nohup npm start > webserver.log 2>&1 &
           echo $! > server.pid
 
-          echo "Waiting for localhost:3000..."
+          echo "Waiting for localhost:80..."
           for i in {1..20}; do
-            if curl -s http://localhost:3000 > /dev/null; then
+            if curl -s http://localhost:80 > /dev/null; then
               echo "SUCCESS: Website is up!"
               exit 0
             fi
@@ -68,8 +68,8 @@ stages:
       inputs:
         targetType: inline
         script: |
-          echo "Kill anything running on port 3000/tcp"
-          fuser -k 3000/tcp || true
+          echo "Kill anything running on port 80/tcp"
+          fuser -k 80/tcp || true
 - stage: Finalize
   displayName: '4. Docker & Cleanup'
   dependsOn:
@@ -93,4 +93,4 @@ stages:
       displayName: 'Stop Server'
       condition: always()
       inputs:
-        script: fuser -k 3000/tcp || true
+        script: fuser -k 80/tcp || true
