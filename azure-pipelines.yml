@@ -40,14 +40,14 @@ stages:
 
     # 2. Build and Start the Website
     - bash: |
-        fuser -k 80/tcp || true
+        fuser -k 8081/tcp || true
         npm install
         nohup npm start > webserver.log 2>&1 &
         echo $! > server.pid
         
-        echo "Waiting for localhost:80..."
+        echo "Waiting for localhost:8081..."
         for i in {1..20}; do
-          if curl -s http://localhost:80 > /dev/null; then
+          if curl -s http://localhost:8081 > /dev/null; then
             echo "SUCCESS: Website is up!"
             exit 0
           fi
@@ -66,8 +66,8 @@ stages:
 
     # 4. Mandatory Cleanup (Stops the 25-minute hang)
     - bash: |
-        echo "Kill anything running on port 80/tcp"
-        fuser -k 80/tcp || true
+        echo "Kill anything running on port 8081/tcp"
+        fuser -k 8081/tcp || true
       displayName: 'Stop Website'
       condition: always() 
 
@@ -91,6 +91,6 @@ stages:
         dockerfile: 'node-js-dummy-test-master/Dockerfile'
         tags: |
           latest
-    - script: fuser -k 80/tcp || true
+    - script: fuser -k 8081/tcp || true
       displayName: 'Stop Server'
       condition: always()
