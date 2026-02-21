@@ -108,5 +108,5 @@ stages:
       inputs:
         sshEndpoint: 'boblinuxbox'  # Your service connection name
         runOptions: 'commands'
-        commands: |
-          commands: 'docker pull docker.io/chevelleman1/bobwebapp:latest && ([ "$(docker ps -aq -f name=bobsite)" ] && docker rm -f bobsite || true) && docker run -d --name bobsite -p 8081:8081 docker.io/chevelleman1/bobwebapp:latest'
+        commands: 'docker pull docker.io/chevelleman1/bobwebapp:latest && ([ "$(docker ps -aq -f name=bobsite)" ] && docker rm -f bobsite || true) && docker run -d --name bobsite -p 8081:8081 docker.io/chevelleman1/bobwebapp:latest'
+        readyTimeout: '20000'
