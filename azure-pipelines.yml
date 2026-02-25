@@ -1,6 +1,6 @@
-trigger:
-  - main
-  - master
+# trigger:
+#   - main
+#   - master
 
 resources:
   repositories:
